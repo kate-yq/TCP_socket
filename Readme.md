@@ -1,118 +1,46 @@
-# TODO:
-1. why server stopped when error
+# Remote File System over TCP Socket
 
+This project implements a remote file system in C programming language. It provides various functions to handle file operations such as writing from a local file to a remote file, reading from a remote file, removing a file, and listing file permission. The project consists of server-side and client-side. The server accepts commands from clients and executes corresponding operations in a multithreaded behavior.
 
-## Design
+## Components:
 
-- Q1 WRITE
+1. Multithreaded TCP Socket Server
+2. TCP Socket Client
+3. Directories:
 
-`% rfs WRITE local-file-path remote-file-path ` (need set system's PATH variable) 
+- Local directory: "local"
+- Remote directory: "file"
+- Permission directory: "meta"
 
-or `% ./client rfs WRITE local-file-path remote-file-path`
+4. Test script: "test_rfs.sh"
 
-or `% ./rfs WRITE local-file-path remote-file-path`
+## Features
 
-How to store Metadata? - mirror a directory for metadata
+- **Support for Multiple Clients:** The server can handle multiple client connections concurrently using threads.
+- **File Operations:** Supports file WRITE, GET, RM, LS, STOP, and HELP operations.
+- **Flexible Command Handling:** Clients can send commands with arguments to perform different file operations. Invalid instructions will be handled properly, thus will NOT affect the server running.
+- **Graceful Shutdown:** The server can be stopped gracefully by sending a "STOP" command.
+- **Cipher and Decipher**: As required, the file will be ciphered before written to server's disk, and deciphered before sent to client side.
+- **Optional input:** the second directory is default to be the same as the fist one, unless specifically state.
 
+## How to run
 
-- Q2 GET
+There are two ways to run the program.
 
-reversed version of WRITE
+### Compile the project and run
 
-function1: read + slice (may need to write in client/server directly)
+Running this project will require 2 terminal windows.
 
-function2: create file + append 
+1. Server side:  
+   `make`  
+   `./server`
+2. After the server starts running, client side:  
+    `./client rfs HELP`  
+   to see all the available commands.
 
-while (1){
-  if (!fileToBuffer(*bufferpointer, *filepointer, xx)){
-    break;
-  }
-  bufferTofile(*bufferpointer, *filepointer, xx);
-}
+### Run everything using a test script
 
-
-
-- Q3 RM remote content
-
-remove file and matadata
-
-return messages:
-
-"success" / "fail" / "no such file"
-
-
-- Q4 Multithread
-
-mutex lock?? - need other struct, like File_t?
-
-flock() ? 
-
-Queue to store threads / client requests?
-
-
-- Q5 Access Permission
-
-int in metadata? 0/1/2/...
-
-
-- Q6 Cipher
-
-cipher before store in remote
-decipher before get from remote
-
-
-- Q7 LS
-
-check metadata
-format? name, dir, access permission, last modified time...
-
-- Additional: Close Server   DONE
-
-a CLI from client - STOP
-
-
-# Question to ask
-
-### Server buffer: only 1 or 1 for each client?
-
-buffer in threads, each thread handles a client file descriptor. Use this to communicate. 
-
-### If too many client connection requests, what to store to delay the connection? (message queue)
-
-don't need to worry about this. threads need much less resources than process. Just accept connections and create thread.
-
-### When the thread is created in server?
-
-After accepting client connection (descriptor created), and pass the descriptor to the thread
-
-### Is mirroring file system allowed?
-
-### single client act and disconnect, or keep acting until done?
-
-In other words, how can we demo the concurrent use?
-
-### monitor / flock()
-
-- fcntl: example
-
-```c
-#include <fcntl.h>
-#include <unistd.h>
-
-// Acquire an exclusive lock for writing
-int fd = open("file.txt", O_RDWR);
-struct flock lock;
-lock.l_type = F_WRLCK;
-lock.l_whence = SEEK_SET;
-lock.l_start = 0;
-lock.l_len = 0;  // Lock the entire file
-fcntl(fd, F_SETLKW, &lock);
-
-// Write to the file
-write(fd, data, data_len);
-
-// Release the exclusive lock
-lock.l_type = F_UNLCK;
-fcntl(fd, F_SETLK, &lock);
-close(fd);
-```
+1. Make the script executable:  
+   `chmod +x test_rfs.sh`
+2. Run the script:  
+   `./test_rfs.sh`
